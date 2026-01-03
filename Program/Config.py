@@ -12,3 +12,6 @@ time_days = ("date", "heure", "temps", "jour")
 
 # Commandes mémoire / session
 memo = ("je m'appelle", "mon nom", "oublie mon nom")
+
+# Commandes de confirmation
+confir = ("oui", "o", "yes", "y")
