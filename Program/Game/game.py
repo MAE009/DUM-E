@@ -11,17 +11,19 @@ class GameMain:
         self.score = 0
 
 
-
         self.feedback_pos = ["Oh Bravos",
                              "Hum magnique"]
 
         self.feedback_neg = ["ah Ah Ah perdu",
                              "Mon intelecte est au dessus de tout"]
 
+
+
     def reset_game(self):
         self.game_current = None
         self.score = 0
         self.dum_e.game_state = False
+
 
     def update_game_current(self):
         # 🟡 CHOIX DU JEU
@@ -30,14 +32,13 @@ class GameMain:
         if self.game_current == "waiting_choice":
             if "pile" in ans_clean or close_match(ans_clean, ["pile"] ) or close_match(ans_clean, ["face"]) or "face" in ans_clean:
                 self.game_current = "pile_face"
-
                 return True
+
             elif "stop" in ans_clean or close_match(ans_clean, ["stop", "quitter"]):
                 print(f"{self.dum_e.name} : Jeu annulé.\n")
-                self.game_current = None
-                self.score = 0
-                self.dum_e.game_state = False
+                self.reset_game()
                 return True
+
             else:
                 print(f"{self.dum_e.name} : Je ne connais pas ce jeu. Tape 'stop' pour annuler.\n")
                 return True
@@ -48,15 +49,13 @@ class GameMain:
                 # Le jeu se lance ici
                 self.pile_face(ans_clean)
                 return True
+
             elif "stop" in ans_clean or close_match(ans_clean, ["stop", "quitter"]):
                 print(f"{self.dum_e.name} : Jeu terminé ! Score final: {self.score}\n")
-                self.game_current = None
-                self.score = 0
-                self.dum_e.game_state = False
+                self.dum_e.memo.update_game_score(self.game_current, self.score)
+                print(f"{self.dum_e.name}: {self.dum_e.memo.get_game_stats(self.game_current)}")
                 self.reset_game()
                 return True
-
-
 
         return False
 
@@ -76,8 +75,7 @@ class GameMain:
         # Proposer de rejouer
         print(f"{self.dum_e.name} : Encore une fois ? (pile/face) ou 'stop' pour arrêter")
 
-        # Définir le flag pour éviter l'affichage double
-        self.dum_e.just_played = True
+
         return True
 
 

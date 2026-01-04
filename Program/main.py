@@ -1,4 +1,6 @@
 import datetime as dt
+from tkinter import StringVar
+from agenda import Agenda
 from Config import confir
 
 # pour separer en different handle :
@@ -10,7 +12,7 @@ from Memo import memo
 import random
 from handle_main import HandleMain
 from Game.game import GameMain
-
+import Memo.memo
 
 
 
@@ -23,11 +25,24 @@ class DUM_E:
         self.type = "Assistant intelligent basé sur des règles"
         self.language = "Python"
 
-        # class des saves(Ajouter)
-        self.memo = memo.Memo()
+        # Date de demarrage
+        self.now = dt.datetime.now()
+        self.time_demarrage = self.now.strftime('%H:%M:%S')
 
-        # Nom de l'utilisateur
-        self.username = ""
+        # Initialiser la mémoire
+        self.memo = Memo.memo.Memo()
+
+        # Récupérer le nom de l'utilisateur depuis la mémoire
+        self.username = self.memo.get_user_name()
+
+        # Garder une référence aux données complètes si besoin
+        self.memory_data = self.memo.data
+
+        # Agenda
+        self.agenda_reminder = Agenda(self)
+        self.agenda_reminder.reminder_priority()
+
+
         # reponse de l'utilisateur
         self.Ans = ""
 
@@ -38,16 +53,14 @@ class DUM_E:
         self.game = GameMain(self)
 
         # Créer l’instance handle en lui passant self
-        self.handle = HandleMain(self, self.game)
+        self.handle = HandleMain(self, self.game, self.memo, self.agenda_reminder)
 
         # state
         self.game_state = False
 
-        self.just_played = False
 
-        # Date de demarrage
-        self.now = dt.datetime.now()
-        self.time_demarrage = self.now.strftime('%H:%M:%S')
+
+
 
         # Maintenir DUM-E
         self.run()
@@ -69,10 +82,10 @@ class DUM_E:
 
 
     def dialog(self):
-        if self.just_played:
-            self.just_played = False  # Reset le flag
-            # Ne pas afficher d'invite supplémentaire
-        elif not self.game_state:
+        # if self.just_played:
+        #     self.just_played = False  # Reset le flag
+        #     # Ne pas afficher d'invite supplémentaire
+        if not self.game_state:
             print(f"{self.name} : Comment puis-je t'aider ?")
 
         elif self.game.game_current == "pile_face":
@@ -119,7 +132,8 @@ class DUM_E:
                    self.handle.handle_time(ans) or
                    self.handle.handle_historique(ans) or
                    self.handle.handle_game(ans) or
-                   self.handle.handle_debug(ans))
+                   self.handle.handle_debug(ans) or
+                   self.handle.handle_reminder(ans))
 
         if not handled and not self.game_state:
             print("Commande non reconnue. Tape 'help' pour voir toutes mes fonctionnalités\n")

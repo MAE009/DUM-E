@@ -2,16 +2,20 @@
 from Config import salutations, exits, helps, time_days, memo
 import datetime as dt
 from methode import clean_input, close_match
-from Game.game import GameMain
+
 
 
 
 class HandleMain:
-    def __init__(self, dum_e, game_instance):
+    def __init__(self, dum_e, game_instance, save, agenda):
         # On garde une référence sur l'instance DUM-E
         self.dum_e = dum_e
 
         self.game = game_instance
+
+        self.memo = save
+
+        self.agenda = agenda
 
         # Historique
         self.histo = []
@@ -32,6 +36,7 @@ class HandleMain:
         }
 
 
+
     # pour collecter les commandes appellees
     def add_histo(self, handle, commande):
         self.histo.append({
@@ -42,7 +47,6 @@ class HandleMain:
 
         if len(self.histo) > 5:
             self.histo.pop(0)
-
 
 
     # ----- Handle Base -----
@@ -59,6 +63,35 @@ class HandleMain:
             self.add_histo("salutation", ans_clean)
 
             return True
+        return False
+
+
+    def handle_reminder(self, ans):
+        ans_clean = clean_input(ans)
+
+        # Détecter "rappel moi" ou "rappel-moi"
+        if "rappel moi" in ans_clean or "rappel-moi" in ans_clean:
+            # Extraire la partie après "rappel moi"
+            if "rappel moi" in ans_clean:
+                parts = ans_clean.split("rappel moi")
+            else:
+                parts = ans_clean.split("rappel-moi")
+
+            if len(parts) > 1:
+                # Prendre tout ce qui vient après "rappel moi"
+                reste = parts[1].strip()
+
+                # Séparer le rappel et la date (on cherche le dernier mot qui pourrait être une date)
+                # Pour simplifier, on pourrait demander séparément
+                print(f"{self.dum_e.name} : Que dois-je te rappeler ?")
+                rappel = input("Moi : ").strip()
+
+                print(f"{self.dum_e.name} : Pour quand ? (ex: 15/01/2025, demain, lundi)")
+                date_input = input("Moi : ").strip()
+
+                # Appeler update_reminder
+                return self.agenda.update_reminder(rappel, date_input)
+
         return False
 
 
@@ -88,39 +121,55 @@ class HandleMain:
 
         return False
 
+
     def show_help(self):
-        print("\n" + "=" * 40)
-        print("        📘 AIDE — DUM-E v0.1")
-        print("=" * 40)
+        print("\n" + "=" * 50)
+        print("            📘 AIDE — DUM-E v0.1")
+        print("=" * 50)
 
         print("\n🔹 Commandes de base")
-        print("  • salut | bonjour | hello | coucou")
+        print("  salut | bonjour | hello | coucou")
         print("    → Saluer DUM-E")
 
         print("\n🔹 Commandes système")
-        print("  • help | aide | liste | commandes")
+        print("  help | aide | liste | commandes")
         print("    → Afficher cette aide")
-        print("  • fin | exit | quitter | au revoir")
+        print("  fin | exit | quitter | au revoir")
         print("    → Quitter DUM-E")
 
-        print("\n🔹 Commandes temps")
-        print("  • date | heure | temps | jour")
+        print("\n🔹 Temps & date")
+        print("  date | heure | temps | jour")
         print("    → Afficher la date et l'heure actuelles")
 
         print("\n🔹 Mémoire utilisateur")
-        print("  • je m'appelle <nom>")
+        print("  je m'appelle <nom>")
         print("    → Enregistrer ton prénom")
-        print("  • mon nom")
+        print("  mon nom")
         print("    → Afficher ton prénom")
-        print("  • oublie mon nom")
+        print("  oublie mon nom")
         print("    → Supprimer ton prénom")
 
-        print("\n🔹 Game Funny")
-        print(f"{"=" * 5}Jeu disponible{"=" * 5}")
-        print("  • Pile ou Face\n")
+        print("\n🔹 Mini-jeux")
+        print("  jeu | jouer")
+        print("    → Lancer un mini-jeu")
 
-        print("\n" + "=" * 40 + "\n")
+        print("\n🔹 Historique")
+        print("  his")
+        print("    → Afficher l'historique des commandes")
 
+        print("\n🔹 Debug & informations")
+        print("  status")
+        print("    → Afficher l'état du système")
+        print("  debug")
+        print("    → Afficher les informations de debug")
+        print("  version")
+        print("    → Afficher la version de DUM-E")
+
+        print("\n🔹 Agenda")
+        print("  rappel moi")
+        print("    → Créer un rappel (suivre les instructions)")
+
+        print("\n" + "=" * 50 + "\n")
 
     # ----- Handle Memo -----
     def handle_memo(self, ans):
@@ -128,15 +177,27 @@ class HandleMain:
         ans_clean = clean_input(ans)
 
         # "je m'appelle" (avec tolérance aux petites fautes)
-        if close_match("je m'appelle", [ans_clean]) or "je m'appelle" in ans_clean:
+        if close_match("je m'appelle", [ans_clean]) or "je m'appelle" in ans_clean or "je mappelle" in ans_clean:
             self.add_histo("memo", ans_clean)
 
 
-            # extraire le nom après "je m'appelle"
-            name = ans_clean.replace("je m'appelle", "").strip()
+            # extraire le nom après "je m'appelle"(variable intermediaire)
+            parts_name = ans_clean.split()
+
+            if len(parts_name) < 3:
+                print("Je n'ai pas compris ton nom 😅")
+                return True
+
+            name = " ".join(parts_name[2:])
+
             if name:  # vérifier qu'il y a bien un nom
+                # 1. Mettre à jour dans l'instance
                 self.dum_e.username = name
-                print(f"{self.dum_e.name} : Enchanté {name} !\n")
+
+                # 2. Sauvegarder dans le JSON (MÉTHODE SIMPLIFIÉE)
+                self.dum_e.memo.update_user_name(name)
+
+                print(f"{self.dum_e.name} : Enchanté {self.dum_e.username} !\n")
             else:
                 print(f"{self.dum_e.name} : Je n'ai pas compris ton prénom.\n")
             return True
@@ -152,10 +213,13 @@ class HandleMain:
             return True
 
         # "oublie mon nom"
-        if close_match(ans_clean, ["oublie mon nom"]) or "oublie mon nom" in ans_clean:
+        if close_match(ans_clean, ["oublie"]) or "oublie" in ans_clean:
             self.add_histo("memo", ans_clean)
 
+            # Effacer le nom
             self.dum_e.username = ""
+            self.dum_e.memo.update_user_name("")  # Méthode simplifiée
+
             print(f"{self.dum_e.name} : J'ai oublié ton nom.\n")
             return True
 

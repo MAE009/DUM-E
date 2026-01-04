@@ -1,0 +1,44 @@
+{
+    "user": {
+        "name": "mayala armand emmanuel",
+        "language": "fr"
+    },
+    "preferences": {
+        "color": "",
+        "city": ""
+    },
+    "agenda": {
+        "taches": [
+            {
+                "rappel": "l'ecole",
+                "jour": 5,
+                "mois": 1,
+                "annee": 2026,
+                "type": "relative"
+            },
+            {
+                "rappel": "hug",
+                "jour": 4,
+                "mois": 1,
+                "annee": 2026,
+                "type": "relative"
+            }
+        ]
+    },
+    "history": {
+        "commands": []
+    },
+    "games": {
+        "devine_nombre": {
+            "best_score": null,
+            "played": 0
+        },
+        "pile_face": {
+            "best_score": 2,
+            "played": 3
+        }
+    },
+    "system": {
+        "version": "0.3"
+    }
+}
