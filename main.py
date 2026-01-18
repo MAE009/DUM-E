@@ -43,7 +43,7 @@ async def run_bot():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
 
     # Importer et configurer les handlers
-    from core.telegram_handlers import setup_handlers
+    from core.telegram_handler import setup_handlers
     await setup_handlers(application)
 
     print("✅ Bot initialisé, démarrage du polling...")
