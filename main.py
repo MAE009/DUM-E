@@ -2,70 +2,27 @@ import os
 import asyncio
 import nest_asyncio
 from flask import Flask
-from telegram.ext import ApplicationBuilder
+from telegram.ext import Application
+from telegram.error import TelegramError
 from dotenv import load_dotenv
 
-# Appliquer nest_asyncio pour Flask + Telegram
+# Appliquer nest_asyncio
 nest_asyncio.apply()
 
-# Charger les variables d'environnement
+# Charger les variables
 load_dotenv()
 
-# Configuration
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TELEGRAM_TOKEN:
-    raise ValueError("❌ TELEGRAM_BOT_TOKEN manquant dans .env")
+    raise ValueError("❌ TELEGRAM_BOT_TOKEN manquant")
 
-# Créer l'app Flask
+# Flask app
 flask_app = Flask(__name__)
 
 
 @flask_app.route('/')
 def home():
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>🤖 DUM-E Bot</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                text-align: center;
-                padding: 50px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-            }
-            .container {
-                background: rgba(255, 255, 255, 0.1);
-                padding: 40px;
-                border-radius: 20px;
-                backdrop-filter: blur(10px);
-                max-width: 600px;
-                margin: 0 auto;
-            }
-            h1 {
-                font-size: 3em;
-                margin-bottom: 20px;
-            }
-            .status {
-                font-size: 1.5em;
-                margin: 20px 0;
-                padding: 10px;
-                background: rgba(0, 255, 0, 0.2);
-                border-radius: 10px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>🤖 DUM-E v0.3</h1>
-            <div class="status">✅ Bot Telegram en ligne !</div>
-            <p>Assistant intelligent basé sur des règles</p>
-            <p>Connectez-vous sur Telegram pour interagir</p>
-        </div>
-    </body>
-    </html>
-    """
+    return "✅ DUM-E Bot v0.3 en ligne !"
 
 
 @flask_app.route('/health')
@@ -75,55 +32,88 @@ def health():
 
 @flask_app.route('/status')
 def status():
-    return {
-        "status": "online",
-        "service": "DUM-E Telegram Bot",
-        "version": "0.3",
-        "endpoints": ["/", "/health", "/status"]
-    }
+    return {"status": "online", "service": "DUM-E"}
 
 
-# Import des handlers Telegram
-from core.telegram_handler import setup_handlers
+async def run_bot():
+    """Fonction pour exécuter le bot Telegram"""
+    print("🤖 Initialisation du bot Telegram...")
+
+    # Créer l'application
+    application = Application.builder().token(TELEGRAM_TOKEN).build()
+
+    # Importer et configurer les handlers
+    from core.telegram_handlers import setup_handlers
+    await setup_handlers(application)
+
+    print("✅ Bot initialisé, démarrage du polling...")
+
+    # Démarrer le bot
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
+
+    print("🔍 Bot en écoute...")
+
+    # Garder le bot en cours d'exécution
+    await asyncio.Event().wait()
 
 
-async def run():
-    """Fonction principale async pour lancer le bot"""
-    print("🤖 Initialisation de DUM-E Telegram Bot...")
-    print(f"✅ Token: {TELEGRAM_TOKEN[:10]}...")
-
-    # Créer l'application Telegram
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-
-    # Configurer les handlers
-    await setup_handlers(app)
-
-    # Initialiser et démarrer
-    await app.initialize()
-    await app.start()
-    print("✅ Bot Telegram initialisé")
-
-    # Démarrer le polling
-    await app.updater.start_polling()
-    print("🔍 Polling démarré - Bot prêt à recevoir des messages")
-
-    # Démarrer Flask dans un thread séparé
+async def run_flask():
+    """Fonction pour exécuter Flask"""
     port = int(os.environ.get("PORT", 10000))
-    print(f"🌐 Serveur web sur le port {port}")
+    print(f"🌐 Démarrage du serveur web sur le port {port}")
 
-    # Exécuter Flask dans l'event loop
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(
-        None,
-        lambda: flask_app.run(
-            host="0.0.0.0",
-            port=port,
-            debug=False,
-            use_reloader=False
-        )
+    # Configurer Flask pour qu'il tourne dans asyncio
+    import threading
+    from werkzeug.serving import make_server
+
+    class FlaskThread(threading.Thread):
+        def __init__(self):
+            threading.Thread.__init__(self)
+            self.daemon = True
+            self.server = make_server('0.0.0.0', port, flask_app, threaded=True)
+
+        def run(self):
+            print(f"🚀 Flask démarré sur http://0.0.0.0:{port}")
+            self.server.serve_forever()
+
+        def shutdown(self):
+            self.server.shutdown()
+
+    flask_thread = FlaskThread()
+    flask_thread.start()
+
+    # Attendre indéfiniment
+    await asyncio.Event().wait()
+
+
+async def main():
+    """Fonction principale asynchrone"""
+    print("🚀 Démarrage de DUM-E...")
+
+    # Lancer Flask et le bot en parallèle
+    flask_task = asyncio.create_task(run_flask())
+    bot_task = asyncio.create_task(run_bot())
+
+    # Attendre que l'une des tâches échoue
+    done, pending = await asyncio.wait(
+        [flask_task, bot_task],
+        return_when=asyncio.FIRST_COMPLETED
     )
 
+    # Annuler les tâches restantes
+    for task in pending:
+        task.cancel()
 
-if __name__ == '__main__':
-    # Lancer l'app asynchrone
-    asyncio.run(run())
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n👋 Arrêt de DUM-E...")
+    except Exception as e:
+        print(f"❌ Erreur: {e}")
+        import traceback
+
+        traceback.print_exc()
