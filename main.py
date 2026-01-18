@@ -1,218 +1,129 @@
 import os
-import logging
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from telegram.error import TelegramError
+import asyncio
+import nest_asyncio
+from flask import Flask
+from telegram.ext import ApplicationBuilder
 from dotenv import load_dotenv
-import datetime
-import random
 
-# Configuration du logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+# Appliquer nest_asyncio pour Flask + Telegram
+nest_asyncio.apply()
 
 # Charger les variables d'environnement
 load_dotenv()
 
+# Configuration
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+if not TELEGRAM_TOKEN:
+    raise ValueError("❌ TELEGRAM_BOT_TOKEN manquant dans .env")
 
-class DUM_E_Bot:
-    def __init__(self):
-        self.token = os.getenv("TELEGRAM_BOT_TOKEN")
-        if not self.token:
-            logger.error("TELEGRAM_BOT_TOKEN non trouvé dans .env")
-            raise ValueError("TELEGRAM_BOT_TOKEN manquant")
+# Créer l'app Flask
+flask_app = Flask(__name__)
 
-        # Créer l'application
-        self.application = Application.builder().token(self.token).build()
 
-        # Configurer les handlers
-        self.setup_handlers()
+@flask_app.route('/')
+def home():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>🤖 DUM-E Bot</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 50px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+            .container {
+                background: rgba(255, 255, 255, 0.1);
+                padding: 40px;
+                border-radius: 20px;
+                backdrop-filter: blur(10px);
+                max-width: 600px;
+                margin: 0 auto;
+            }
+            h1 {
+                font-size: 3em;
+                margin-bottom: 20px;
+            }
+            .status {
+                font-size: 1.5em;
+                margin: 20px 0;
+                padding: 10px;
+                background: rgba(0, 255, 0, 0.2);
+                border-radius: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🤖 DUM-E v0.3</h1>
+            <div class="status">✅ Bot Telegram en ligne !</div>
+            <p>Assistant intelligent basé sur des règles</p>
+            <p>Connectez-vous sur Telegram pour interagir</p>
+        </div>
+    </body>
+    </html>
+    """
 
-        # Stockage simple en mémoire (pour l'exemple)
-        self.user_data = {}
 
-    def setup_handlers(self):
-        """Configurer les handlers de commandes et messages"""
+@flask_app.route('/health')
+def health():
+    return "🟢 Healthy", 200
 
-        # Commandes
-        self.application.add_handler(CommandHandler("start", self.start))
-        self.application.add_handler(CommandHandler("help", self.help))
-        self.application.add_handler(CommandHandler("status", self.status))
-        self.application.add_handler(CommandHandler("stop", self.stop))
-        self.application.add_handler(CommandHandler("jeu", self.jeu))
 
-        # Messages textuels
-        self.application.add_handler(MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
-            self.handle_message
-        ))
+@flask_app.route('/status')
+def status():
+    return {
+        "status": "online",
+        "service": "DUM-E Telegram Bot",
+        "version": "0.3",
+        "endpoints": ["/", "/health", "/status"]
+    }
 
-        # Gestion des erreurs
-        self.application.add_error_handler(self.error_handler)
 
-    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler pour /start"""
-        user = update.effective_user
-        salutations = [
-            f"Salut {user.first_name} ! Je suis DUM-E v0.3 🤖",
-            f"Hey 👋 {user.first_name} ! DUM-E à ton service.",
-            f"Bonjour {user.first_name} ! Prêt pour bosser ensemble ? 😊"
-        ]
+# Import des handlers Telegram
+from core.telegram_handler import setup_handlers
 
-        welcome = random.choice(salutations)
-        help_text = "\n\nTape /help pour voir toutes mes fonctionnalités."
 
-        await update.message.reply_text(welcome + help_text)
+async def run():
+    """Fonction principale async pour lancer le bot"""
+    print("🤖 Initialisation de DUM-E Telegram Bot...")
+    print(f"✅ Token: {TELEGRAM_TOKEN[:10]}...")
 
-    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler pour /help"""
-        help_text = """
-🤖 *COMMANDES DUM-E*
+    # Créer l'application Telegram
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
-*Commandes de base*
-/start - Démarrer le bot
-/help - Afficher cette aide
-/status - État du bot
-/stop - Réinitialiser la conversation
-/jeu - Jouer à un jeu
+    # Configurer les handlers
+    await setup_handlers(app)
 
-*Commandes texte*
-• "salut", "bonjour" - Saluer
-• "date" - Date actuelle
-• "heure" - Heure actuelle
-• "je m'appelle [nom]" - Définir ton nom
-• "mon nom" - Afficher ton nom
-• "pile" ou "face" - Jouer à pile ou face
-• "rappel [quoi] [quand]" - Créer un rappel
-        """
-        await update.message.reply_text(help_text, parse_mode='Markdown')
+    # Initialiser et démarrer
+    await app.initialize()
+    await app.start()
+    print("✅ Bot Telegram initialisé")
 
-    async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler pour /status"""
-        await update.message.reply_text("✅ DUM-E est en ligne et opérationnel !")
+    # Démarrer le polling
+    await app.updater.start_polling()
+    print("🔍 Polling démarré - Bot prêt à recevoir des messages")
 
-    async def stop(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler pour /stop"""
-        user_id = update.effective_user.id
-        if user_id in self.user_data:
-            del self.user_data[user_id]
-        await update.message.reply_text("🔄 Conversation réinitialisée. Tape /start pour recommencer.")
+    # Démarrer Flask dans un thread séparé
+    port = int(os.environ.get("PORT", 10000))
+    print(f"🌐 Serveur web sur le port {port}")
 
-    async def jeu(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handler pour /jeu"""
-        await update.message.reply_text(
-            "🎮 Veux-tu jouer à :\n"
-            "• Pile ou Face : tape 'pile' ou 'face'\n"
-            "• Devine le nombre : tape 'nombre'"
+    # Exécuter Flask dans l'event loop
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(
+        None,
+        lambda: flask_app.run(
+            host="0.0.0.0",
+            port=port,
+            debug=False,
+            use_reloader=False
         )
-
-    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Gérer les messages textuels"""
-        user_message = update.message.text.lower()
-        user_id = update.effective_user.id
-        response = ""
-
-        logger.info(f"Message de {user_id}: {user_message}")
-
-        # Gestion des salutations
-        if any(word in user_message for word in ["salut", "bonjour", "hello", "hi", "coucou", "yo"]):
-            response = f"Salut {update.effective_user.first_name} ! 😊"
-
-        # Date
-        elif "date" in user_message:
-            today = datetime.datetime.now()
-            response = f"Nous sommes le {today.strftime('%d/%m/%Y')}"
-
-        # Heure
-        elif "heure" in user_message or "horaire" in user_message:
-            now = datetime.datetime.now()
-            response = f"Il est {now.strftime('%H:%M:%S')}"
-
-        # Nom utilisateur
-        elif "je m'appelle" in user_message:
-            parts = user_message.split("je m'appelle")
-            if len(parts) > 1:
-                name = parts[1].strip()
-                self.user_data[user_id] = {'name': name}
-                response = f"Enchanté {name} ! Je m'appelle DUM-E 🤖"
-            else:
-                response = "Format: 'je m'appelle [ton nom]'"
-
-        elif "mon nom" in user_message:
-            if user_id in self.user_data and 'name' in self.user_data[user_id]:
-                response = f"Tu t'appelles {self.user_data[user_id]['name']}"
-            else:
-                response = "Je ne connais pas encore ton nom. Dis-moi avec 'je m'appelle [ton nom]'"
-
-        # Jeu pile ou face
-        elif "pile" in user_message or "face" in user_message:
-            result = random.choice(["Pile", "Face"])
-            user_choice = "pile" if "pile" in user_message else "face"
-
-            if user_choice == result.lower():
-                response = f"🎉 Bravo ! C'est {result}. Tu as gagné !"
-            else:
-                response = f"😅 Dommage ! C'est {result}. Tu as perdu !"
-
-            # Proposer de rejouer
-            response += "\n\nEncore une fois ? 'pile' ou 'face'"
-
-        # Rappels
-        elif "rappel" in user_message:
-            parts = user_message.split("rappel", 1)
-            if len(parts) > 1 and parts[1].strip():
-                reminder_text = parts[1].strip()
-                response = f"✅ Rappel enregistré : '{reminder_text}'"
-            else:
-                response = "Format: 'rappel [ce que tu dois faire] [quand]'"
-
-        # Si rien ne correspond
-        else:
-            response = (
-                "Je n'ai pas compris. 🤔\n"
-                "Essaie :\n"
-                "• 'salut' pour me dire bonjour\n"
-                "• 'date' pour la date\n"
-                "• 'heure' pour l'heure\n"
-                "• /help pour plus d'options"
-            )
-
-        await update.message.reply_text(response)
-
-    async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Gérer les erreurs"""
-        logger.error(f"Erreur: {context.error}")
-
-        if update and update.effective_message:
-            await update.effective_message.reply_text(
-                "❌ Une erreur est survenue. Veuillez réessayer."
-            )
-
-    def run(self):
-        """Démarrer le bot"""
-        logger.info("🤖 Démarrage de DUM-E Telegram Bot...")
-        logger.info(f"✅ Token: {self.token[:10]}...")
-
-        # Lancer le bot
-        self.application.run_polling(
-            drop_pending_updates=True,
-            allowed_updates=Update.ALL_TYPES
-        )
+    )
 
 
-def main():
-    """Fonction principale"""
-    try:
-        bot = DUM_E_Bot()
-        bot.run()
-    except Exception as e:
-        logger.error(f"Erreur lors du démarrage: {e}")
-        print(f"❌ Erreur: {e}")
-        print("➡️ Vérifiez votre token Telegram dans le fichier .env")
-
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    # Lancer l'app asynchrone
+    asyncio.run(run())
