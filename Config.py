@@ -8,7 +8,7 @@ exits = ("fin", "exit", "quitter", "au revoir")
 helps = ("help", "aide", "liste", "commandes")
 
 # Commandes liées à la date et l'heure
-time_days = ("date", "heure", "temps", "jour")
+time_days = ("date", "heure", "temps")
 
 # Commandes mémoire / session
 memo = ("je m'appelle", "mon nom", "oublie mon nom")

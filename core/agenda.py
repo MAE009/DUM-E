@@ -6,13 +6,8 @@ class Agenda:
         self.priority_reminder = []
         self.reminders = []
         self.time = dum_e.now
-        self.dum_e =dum_e
+        self.dum_e = dum_e
 
-        # Nettoyer les anciennes tâches au démarrage
-        if self.dum_e.memo.clean_old_agenda():
-            print(f"{self.dum_e.name} : J'ai nettoyé les tâches passées de l'agenda.")
-
-        # ... votre code existant ...
         self.mois_fr = {
             "janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5,
             "juin": 6, "juillet": 7, "août": 8, "aout": 8, "septembre": 9,
@@ -107,66 +102,43 @@ class Agenda:
         # Si rien n'est trouvé
         return None
 
-    def update_reminder(self, enonce: str, date_input):
-        """
-        date_input peut être :
-        - "15/01/2025"
-        - "15 janvier 2025"
-        - "lundi 15 janvier"
-        - "demain"
-        """
+    async def update_reminder_async(self, message):
+        """Version async pour créer un rappel"""
+        # Ici, vous pourriez implémenter une logique de conversation étape par étape
+        # Pour simplifier, on suppose le format: [rappel] [date]
+        parts = message.split(maxsplit=1)
 
-        # Analyser la date
+        if len(parts) < 2:
+            return "Format: [rappel] [date]\nExemple: 'Réunion importante demain'"
+
+        rappel = parts[0]
+        date_input = parts[1]
+
         date_info = self.parse_date(date_input)
 
         if date_info is None:
-            print(f"{self.dum_e.name} : Je n'ai pas compris la date. Format acceptés :")
-            print("  - 15/01/2025")
-            print("  - 15 janvier 2025")
-            print("  - lundi prochain")
-            print("  - demain")
-            return False
+            return (
+                "Je n'ai pas compris la date. Formats acceptés:\n"
+                "- 15/01/2025\n"
+                "- 15 janvier 2025\n"
+                "- lundi\n"
+                "- demain\n"
+                "- après-demain"
+            )
 
+        # Sauvegarder dans la mémoire
+        self.dum_e.memo.update_agenda(rappel, date_info)
+
+        # Message de confirmation
         if date_info["type"] == "exacte":
-            # Date exacte
-            self.reminders.append({
-                "rappel": enonce,
-                "jour": date_info["jour"],
-                "mois": date_info["mois"],
-                "annee": date_info["annee"],
-                "type": date_info["type"]
-            })
-            self.dum_e.memo.update_agenda(enonce, date_info)
-
-            # Afficher confirmation
             mois_nom = list(self.mois_fr.keys())[list(self.mois_fr.values()).index(date_info["mois"])]
-            print(
-                f"{self.dum_e.name} : Rappel '{enonce}' ajouté pour le {date_info['jour']} {mois_nom} {date_info['annee']}")
+            return f"✅ Rappel '{rappel}' ajouté pour le {date_info['jour']} {mois_nom} {date_info['annee']}"
 
         elif date_info["type"] == "semaine":
-            # Jour de la semaine
-            self.reminders.append({
-                "rappel": enonce,
-                "jour_nom": date_info["jour_nom"],
-                "type": date_info["type"]
-            })
-            self.dum_e.memo.update_agenda(enonce, date_info)
-            print(f"{self.dum_e.name} : Rappel '{enonce}' ajouté pour {date_info['jour_nom'].capitalize()}")
+            return f"✅ Rappel '{rappel}' ajouté pour {date_info['jour_nom'].capitalize()}"
 
         elif date_info["type"] == "relative":
-            # Date relative (demain, etc.)
-            self.reminders.append({
-                "rappel": enonce,
-                "jour": date_info["jour"],
-                "mois": date_info["mois"],
-                "annee": date_info["annee"],
-                "type": date_info["type"]
-            })
-            self.dum_e.memo.update_agenda(enonce, date_info)
-            print(
-                f"{self.dum_e.name} : Rappel '{enonce}' ajouté pour le {date_info['jour']}/{date_info['mois']}/{date_info['annee']}")
-
-        return True
+            return f"✅ Rappel '{rappel}' ajouté pour le {date_info['jour']}/{date_info['mois']}/{date_info['annee']}"
 
 
 

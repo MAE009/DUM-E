@@ -1,16 +1,25 @@
-# memo.py
 import json
 from pathlib import Path
 import datetime as dt
+import os
 
 
 class Memo:
-    def __init__(self):
-        self.base_path = Path(__file__).parent
-        self.memory_file = self.base_path / "dum_e_memory.json"
+    def __init__(self, chat_id=None):
+        self.base_path = Path(__file__).parent.parent
+        if chat_id:
+            # En mode Telegram, créer un fichier par utilisateur
+            self.data_dir = self.base_path / "data" / "users"
+            self.data_dir.mkdir(parents=True, exist_ok=True)
+            self.memory_file = self.data_dir / f"user_{chat_id}_memory.json"
+        else:
+            # Mode console normal
+            self.data_dir = self.base_path / "data"
+            self.data_dir.mkdir(exist_ok=True)
+            self.memory_file = self.data_dir / "dum_e_memory.json"
 
-        # Charger ou créer la mémoire avec la structure fixe
         self.data = self.load_memory()
+
 
     def load_memory(self):
         """Charge la mémoire depuis le fichier JSON avec structure fixe"""

@@ -1,0 +1,29 @@
+{
+    "user": {
+        "name": "",
+        "language": "fr"
+    },
+    "preferences": {
+        "color": "",
+        "city": ""
+    },
+    "agenda": {
+        "taches": []
+    },
+    "history": {
+        "commands": []
+    },
+    "games": {
+        "devine_nombre": {
+            "best_score": null,
+            "played": 0
+        },
+        "pile_face": {
+            "best_score": 2,
+            "played": 3
+        }
+    },
+    "system": {
+        "version": "0.3"
+    }
+}
