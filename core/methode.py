@@ -64,7 +64,7 @@ def detect_intent(ans):
         if close_match(word, ["date"]):
             return "DATE"
 
-        if close_match(word, ["aujourd'hui", "aujourdhui", "jour"]):
+        if close_match(word, ["aujourd'hui", "aujourdhui"]):
             return "DAY"
 
         if close_match(word, ["status", "état", "etat"]):

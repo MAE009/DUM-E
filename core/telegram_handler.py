@@ -62,7 +62,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     dum_e_instance = get_dum_e_instance(chat_id)
 
     # Récupérer le texte d'aide
-    help_text = await dum_e_instance.handle.get_help_text()
+    help_text = await dum_e_instance.handle.handle_system_async("help")
     await update.message.reply_text(help_text, parse_mode='Markdown')
 
 

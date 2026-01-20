@@ -408,9 +408,10 @@ class HandleMain:
 
     async def handle_game_async(self, ans):
         ans_clean = clean_input(ans)
+        intention = detect_intent(ans_clean)
 
         if self.game.game_current is None:
-            if "jeu" in ans_clean or close_match(ans_clean, ["jouer"]):
+            if intention == "GAME_START":
                 self.dum_e.game_state = True
                 self.game.game_current = "waiting_choice"
                 self.add_histo("game", "demarrage")
@@ -525,7 +526,7 @@ class HandleMain:
 
         if intention == "HISTORIQUE":
             if len(self.histo) > 0:
-                histo_text = "📜 Historique des commandes :\n"
+                histo_text =  "📜 Historique des commandes :\n"
                 for i, h in enumerate(self.histo, start=1):
                     if isinstance(h, dict):
                         histo_text += f"{i}. [{h['heure']}] {h['type']} → {h['commande']}\n"
