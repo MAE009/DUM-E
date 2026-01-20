@@ -105,41 +105,71 @@ class Agenda:
 
     async def update_reminder_async(self, message):
         """Version async pour créer un rappel"""
-        # Ici, vous pourriez implémenter une logique de conversation étape par étape
-        # Pour simplifier, on suppose le format: [rappel] [date]
-        parts = message.split(maxsplit=1)
+        # Nettoyer le message
+        message = message.strip()
 
-        if len(parts) < 2:
-            return "Format: [rappel] [date]\nExemple: 'Réunion importante demain'"
+        # Détecter le format
+        if "rappel " in message.lower():
+            # Supprimer le mot "rappel" du début
+            message = message.lower().replace("rappel ", "", 1).strip()
 
-        rappel = parts[0]
-        date_input = parts[1]
+        # Séparer le texte et la date (simplifié)
+        words = message.split()
+        date_keywords = ["demain", "lundi", "mardi", "mercredi", "jeudi", "vendredi",
+                         "samedi", "dimanche", "aujourd'hui", "semaine", "mois"]
 
+        # Trouver où commence la date
+        date_start = None
+        for i, word in enumerate(words):
+            if any(date_word in word for date_word in date_keywords) or '/' in word:
+                date_start = i
+                break
+
+        if date_start is None:
+            # Aucune date détectée, prendre le dernier mot comme date ?
+            # Ou demander plus d'info
+            return (
+                f"Je n'ai pas détecté de date dans votre message.\n"
+                f"Message reçu: '{message}'\n"
+                f"Format attendu: '[rappel] [date]'\n"
+                f"Exemple: 'réunion demain' ou 'anniversaire 15/01/2025'"
+            )
+
+        # Extraire rappel et date
+        rappel_text = " ".join(words[:date_start])
+        date_input = " ".join(words[date_start:])
+
+        if not rappel_text:
+            rappel_text = "Rappel sans description"
+
+        # Analyser la date
         date_info = self.parse_date(date_input)
 
         if date_info is None:
             return (
-                "Je n'ai pas compris la date. Formats acceptés:\n"
+                f"Je n'ai pas compris la date '{date_input}'.\n"
+                "Formats acceptés:\n"
+                "- demain, après-demain, aujourd'hui\n"
+                "- lundi, mardi, etc.\n"
                 "- 15/01/2025\n"
-                "- 15 janvier 2025\n"
-                "- lundi\n"
-                "- demain\n"
-                "- après-demain"
+                "- 15 janvier 2025"
             )
 
         # Sauvegarder dans la mémoire
-        self.dum_e.memo.update_agenda(rappel, date_info)
+        self.dum_e.memo.update_agenda(rappel_text, date_info)
 
         # Message de confirmation
         if date_info["type"] == "exacte":
             mois_nom = list(self.mois_fr.keys())[list(self.mois_fr.values()).index(date_info["mois"])]
-            return f"✅ Rappel '{rappel}' ajouté pour le {date_info['jour']} {mois_nom} {date_info['annee']}"
+            return f"✅ Rappel '{rappel_text}' ajouté pour le {date_info['jour']} {mois_nom} {date_info['annee']}"
 
         elif date_info["type"] == "semaine":
-            return f"✅ Rappel '{rappel}' ajouté pour {date_info['jour_nom'].capitalize()}"
+            return f"✅ Rappel '{rappel_text}' ajouté pour {date_info['jour_nom'].capitalize()}"
 
         elif date_info["type"] == "relative":
-            return f"✅ Rappel '{rappel}' ajouté pour le {date_info['jour']}/{date_info['mois']}/{date_info['annee']}"
+            return f"✅ Rappel '{rappel_text}' ajouté pour le {date_info['jour']}/{date_info['mois']}/{date_info['annee']}"
+
+        return f"✅ Rappel '{rappel_text}' enregistré."
 
 
 

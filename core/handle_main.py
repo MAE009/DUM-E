@@ -77,26 +77,126 @@ class HandleMain:
         return False
 
     async def handle_reminder_async(self, ans):
+        """Version async pour créer un rappel (pour Telegram)"""
         ans_clean = clean_input(ans)
         intention = detect_intent(ans_clean)
 
         if intention == "REMINDER":
+            # Vérifier si l'utilisateur a donné le rappel directement
+            if "rappel moi" in ans_clean:
+                # Extraire le rappel après "rappel moi"
+                parts = ans_clean.split("rappel moi")
+                if len(parts) > 1 and parts[1].strip():
+                    rappel_text = parts[1].strip()
+                    # Demander la date
+                    return (
+                        f"{self.dum_e.name} : Rappel '{rappel_text}' noté.\n"
+                        f"Pour quand ? (ex: demain, 15/01/2025, lundi)"
+                    )
+
+            # Format: "rappel [quoi] [quand]"
+            if ans_clean.startswith("rappel "):
+                reste = ans_clean[7:].strip()  # Enlever "rappel "
+                if reste:
+                    # Essayer de deviner la date dans le message
+                    words = reste.split()
+                    date_keywords = ["demain", "lundi", "mardi", "mercredi", "jeudi", "vendredi",
+                                     "samedi", "dimanche", "aujourd'hui", "semaine", "mois"]
+
+                    # Trouver où commence la date
+                    date_start = None
+                    for i, word in enumerate(words):
+                        if any(date_word in word for date_word in date_keywords) or '/' in word:
+                            date_start = i
+                            break
+
+                    if date_start is not None:
+                        # Séparer rappel et date
+                        rappel = " ".join(words[:date_start])
+                        date_input = " ".join(words[date_start:])
+
+                        if rappel and date_input:
+                            # Appeler update_reminder_async de l'agenda
+                            if hasattr(self.agenda, 'update_reminder_async'):
+                                return await self.agenda.update_reminder_async(f"{rappel} {date_input}")
+                            else:
+                                # Fallback simple
+                                return f"✅ Rappel '{rappel}' enregistré pour {date_input}"
+
+            # Si pas de format direct, demander les infos
             return (
-                "Je vais te demander quelques informations pour le rappel.\n"
-                "Format: [rappel] [date]\n"
-                "Exemple: 'Réunion importante demain' ou 'Anniversaire 15/01/2025'\n"
-                "Tu peux aussi créer étape par étape avec 'créer rappel'"
+                f"{self.dum_e.name} : Pour créer un rappel, utilisez l'un de ces formats :\n"
+                "1. 'rappel moi [quoi] [quand]'\n"
+                "2. 'rappel [quoi] [quand]'\n"
+                "3. 'créer rappel'\n\n"
+                "Exemples :\n"
+                "- 'rappel réunion demain'\n"
+                "- 'rappel rendez-vous chez le médecin lundi'\n"
+                "- 'rappel anniversaire 15/01/2025'"
             )
 
         # Détection de création étape par étape
         if "créer rappel" in ans_clean or "creer rappel" in ans_clean:
             return (
-                "Création de rappel étape par étape:\n"
-                "1. Envoie le texte du rappel\n"
-                "2. Ensuite, je te demanderai la date"
+                f"{self.dum_e.name} : Création de rappel étape par étape:\n"
+                "1. Envoyez le texte du rappel (ex: 'Réunion importante')\n"
+                "2. Ensuite, je vous demanderai la date\n\n"
+                "Ou utilisez directement : 'rappel [quoi] [quand]'"
             )
 
+        # Si l'utilisateur répond à une question précédente
+        # (vous aurez besoin d'un système de conversation)
+        if self.dum_e.reminder_context and "rappel" not in ans_clean:
+            await self.handle_reminder_conversation_async(ans)
+            # Ici, on pourrait traiter une réponse à une question précédente
+            # Pour simplifier, on va traiter comme un rappel complet
+            # Vous pourriez implémenter un système d'état plus sophistiqué
+            pass
+
         return None
+
+
+    async def handle_reminder_conversation_async(self, ans, context=None):
+        """Gérer une conversation pour créer un rappel étape par étape"""
+        ans_clean = clean_input(ans)
+
+        # Si pas de contexte, commencer la conversation
+        if context is None or context.get('step') is None:
+            return (
+                f"{self.dum_e.name} : Je vais vous aider à créer un rappel.\n"
+                "1️⃣ D'abord, quel est le rappel ?\n"
+                "(ex: 'Réunion avec l'équipe', 'Anniversaire de Pierre')"
+            )
+
+        step = context.get('step')
+
+        if step == 1:  # Attente du texte du rappel
+            context['rappel'] = ans_clean
+            context['step'] = 2
+            return (
+                f"{self.dum_e.name} : Rappel '{ans_clean}' noté.\n"
+                "2️⃣ Maintenant, pour quand ?\n"
+                "(ex: 'demain', 'lundi', '15/01/2025')"
+            )
+
+        elif step == 2:  # Attente de la date
+            date_input = ans_clean
+            rappel = context.get('rappel', '')
+
+            if hasattr(self.agenda, 'update_reminder_async'):
+                result = await self.agenda.update_reminder_async(f"{rappel} {date_input}")
+                # Réinitialiser le contexte
+                if 'rappel_context' in self.dum_e.__dict__:
+                    self.dum_e.reminder_context = None
+                return result
+            else:
+                return f"✅ Rappel '{rappel}' enregistré pour {date_input}"
+
+        return None
+
+
+
+
 
     def handle_system(self, ans):
         ans_clean = clean_input(ans)
