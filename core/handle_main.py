@@ -280,6 +280,7 @@ class HandleMain:
 • /start → Démarrer le bot
 • /help → Afficher cette aide
 • /status → Vérifier l'état du bot
+• /cancel → Annuel une action
 • /stop → Réinitialiser la conversation
 """
         return help_text

@@ -68,7 +68,7 @@ class DUM_E:
         response = await self.handle_event_async(chat_id)
         return response
 
-    async def handle_event_async(self):
+    async def handle_event_async(self, chat_id=None):
         """Version asynchrone pour Telegram"""
         ans = self.Ans
 
