@@ -6,9 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="bdff3f3d-6f1e-4d9c-8137-a13a20f25054" name="Changes" comment="Version 0.2 propre après nettoyage">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/agenda.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/agenda.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/dum_e.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/dum_e.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/handle_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/handle_main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/core/methode.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/methode.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/telegram_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/telegram_handler.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -215,7 +216,7 @@
       <workItem from="1767909041963" duration="6601000" />
       <workItem from="1768133155978" duration="365000" />
       <workItem from="1768729382099" duration="16967000" />
-      <workItem from="1768925930812" duration="6209000" />
+      <workItem from="1768925930812" duration="9076000" />
     </task>
     <task id="LOCAL-00001" summary="Version 0.1 propre après nettoyage">
       <option name="closed" value="true" />

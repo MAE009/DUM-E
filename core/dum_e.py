@@ -43,14 +43,29 @@ class DUM_E:
         # State
         self.game_state = False
 
+        self.current_chat_id = chat_id  # AJOUTEZ CETTE LIGNE
+
         # Si pas en mode Telegram, démarrer l'interface console
         if not telegram_mode:
             self.run_console()
 
-    async def process_message(self, message):
+
+
+    async def process_message(self, message, chat_id=None):
         """Traiter un message venant de Telegram"""
         self.Ans = message.lower()
-        response = await self.handle_event_async()
+        self.current_chat_id = chat_id  # Stocker le chat_id
+
+        # D'abord vérifier si on a une conversation en cours
+        if chat_id:
+            conversation_response = await self.handle.handle_conversation(
+                self.Ans, chat_id
+            )
+            if conversation_response:
+                return conversation_response
+
+        # Sinon, traiter normalement
+        response = await self.handle_event_async(chat_id)
         return response
 
     async def handle_event_async(self):
@@ -85,7 +100,7 @@ class DUM_E:
         response = await self.handle.handle_debug_async(ans)
         if response: return response
 
-        response = await self.handle.handle_reminder_async(ans)
+        response = await self.handle.handle_reminder_async(ans, chat_id)
         if response: return response
 
         # Si rien n'est reconnu

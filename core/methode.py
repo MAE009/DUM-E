@@ -43,6 +43,9 @@ def detect_intent(ans):
         if close_match(word, ["salut", "bonjour", "hello", "coucou", "holla", "yo", "hey"]):
             return "SALUTATION"
 
+        if close_match(word, ["rappel moi", "rappel-moi", "rendez-vous", "creer rappel"]):
+            return "REMINDER"
+
         if close_match(word, ["help", "aide", "liste", "commandes"]):
             return "HELP"
 

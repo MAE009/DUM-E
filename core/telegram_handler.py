@@ -15,6 +15,7 @@ async def setup_handlers(app):
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("status", status_command))
     app.add_handler(CommandHandler("stop", stop_command))
+    app.add_handler(CommandHandler("cancel", cancel_command))  # NOUVEAU
 
     # Messages texte
     app.add_handler(MessageHandler(
@@ -98,11 +99,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Obtenir l'instance DUM-E pour cet utilisateur
     dum_e_instance = get_dum_e_instance(chat_id)
 
+
     # Traiter le message via DUM-E
-    response = await dum_e_instance.process_message(user_message)
+    response = await dum_e_instance.process_message(user_message, chat_id)
 
     # Envoyer la réponse
     await update.message.reply_text(response)
+
+
+
+# AJOUTEZ AUSSI UN HANDLER POUR ANNULER
+async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler pour annuler une action en cours"""
+    chat_id = update.effective_chat.id
+
+    # Nettoyer les conversations en cours
+    dum_e_instance = get_dum_e_instance(chat_id)
+    if hasattr(dum_e_instance.handle, '_cleanup_conversation'):
+        dum_e_instance.handle._cleanup_conversation(chat_id)
+
+    await update.message.reply_text("✅ Action annulée. Tape /help pour les commandes.")
+
 
 
 async def error_handler(update: Update, context: CallbackContext):
