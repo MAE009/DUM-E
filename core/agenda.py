@@ -186,8 +186,11 @@ class Agenda:
                         All_rappels.append(f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']}")
 
             if urgent_tasks or future_tasks:
-                return All_rappels
-            return None
-
+                # Convertir la liste en chaîne
+                if All_rappels:
+                    return "\n".join(All_rappels)
+                return "📅 Agenda vide"
+            else:
+                return f"{self.dum_e.name} : Aucun rappel dans l'agenda.\n"
         else:
             return f"{self.dum_e.name} : Aucun rappel dans l'agenda.\n"

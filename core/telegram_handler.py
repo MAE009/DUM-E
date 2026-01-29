@@ -59,14 +59,11 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def agenda_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handler pour /help"""
     chat_id = update.effective_chat.id
     dum_e_instance = get_dum_e_instance(chat_id)
 
-    # Récupérer le texte d'aide
-    agenda_list = await dum_e_instance.agenda()
+    agenda_list = dum_e_instance.agenda()  # Pas besoin de await
     await update.message.reply_text(agenda_list, parse_mode='Markdown')
-
 
 
 

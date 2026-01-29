@@ -49,10 +49,16 @@ class DUM_E:
         if not telegram_mode:
             self.run_console()
 
+    # dum_e.py (dans la classe DUM_E)
+    async def agenda(self, message=None, chat_id=None):
+        # Utiliser await si reminder_priority() est asynchrone
+        # Sinon, appeler directement
+        result = self.agenda_reminder.reminder_priority()
 
-
-    async def agenda(self, message, chat_id=None):
-        return self.agenda_reminder.reminder_priority()
+        # Convertir la liste en chaîne si nécessaire
+        if isinstance(result, list):
+            return "\n".join(result)
+        return result
 
 
     async def process_message(self, message, chat_id=None):
