@@ -118,6 +118,7 @@ class Agenda:
 
     # sera appelle au demarrage
     def reminder_priority(self):
+        All_rappels = []
         # Nettoyer d'abord
         self.dum_e.memo.clean_old_agenda()
 
@@ -171,8 +172,10 @@ class Agenda:
 
                         print(
                             f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']} ({days_str})")
+                        All_rappels.append(f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']} ({days_str})")
                     elif rappel.get("type") == "semaine":
                         print(f"  {i}. {rappel['rappel']} - {rappel['jour_nom'].capitalize()}")
+                        All_rappels.append(f"  {i}. {rappel['rappel']} - {rappel['jour_nom'].capitalize()}")
 
             # Afficher les tâches futures
             if future_tasks:
@@ -180,9 +183,11 @@ class Agenda:
                 for i, rappel in enumerate(future_tasks, 1):
                     if rappel.get("type") == "exacte" or rappel.get("type") == "relative":
                         print(f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']}")
+                        All_rappels.append(f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']}")
 
             if urgent_tasks or future_tasks:
-                print()
+                return All_rappels
+            return None
 
         else:
-            print(f"{self.dum_e.name} : Aucun rappel dans l'agenda.\n")
+            return f"{self.dum_e.name} : Aucun rappel dans l'agenda.\n"

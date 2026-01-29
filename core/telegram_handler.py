@@ -15,6 +15,7 @@ async def setup_handlers(app):
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("status", status_command))
     app.add_handler(CommandHandler("stop", stop_command))
+    app.add_handler(CommandHandler("list_agenda", agenda_command))
     app.add_handler(CommandHandler("cancel", cancel_command))  # NOUVEAU
 
     # Messages texte
@@ -55,6 +56,18 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"{welcome}\n\n"
         "Tape /help pour voir toutes mes fonctionnalités."
     )
+
+
+async def agenda_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handler pour /help"""
+    chat_id = update.effective_chat.id
+    dum_e_instance = get_dum_e_instance(chat_id)
+
+    # Récupérer le texte d'aide
+    agenda_list = await dum_e_instance.agenda()
+    await update.message.reply_text(agenda_list, parse_mode='Markdown')
+
+
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):

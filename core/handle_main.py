@@ -282,6 +282,7 @@ class HandleMain:
 • /status → Vérifier l'état du bot
 • /cancel → Annuel une action
 • /stop → Réinitialiser la conversation
+/list_agenda
 """
         return help_text
 

@@ -51,6 +51,10 @@ class DUM_E:
 
 
 
+    async def agenda(self, message, chat_id=None):
+        return self.agenda_reminder.reminder_priority()
+
+
     async def process_message(self, message, chat_id=None):
         """Traiter un message venant de Telegram"""
         self.Ans = message.lower()
