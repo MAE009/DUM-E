@@ -52,8 +52,8 @@ def detect_intent(ans):
         if close_match(word, ["fin", "exit", "quitter", "au revoir", "bye", "stop"]):
             return "EXIT"
 
-        if close_match(word, ["appelle"]) and "je m'appelle" in ans:
-            return "GET_NAME"
+        # if close_match(word, ["appelle"]) and "je m'appelle" in ans:
+        #     return "GET_NAME"
 
         if close_match(word, ["nom"]) and ("mon nom" in ans or "monnom" in ans):
             return "GIVE_NAME"
@@ -84,5 +84,17 @@ def detect_intent(ans):
 
         if close_match(word, ["jeu", "jouer", "game", "play"]):
             return "GAME_START"
+
+
+    SET_NAME_PATTERNS = [
+        "je m'appelle",
+        "je mappelle",
+        "mon nom est",
+        "je suis"
+    ]
+
+    for pattern in SET_NAME_PATTERNS:
+        if pattern in ans:
+            return "SET_NAME"
 
     return "UNKNOWN"

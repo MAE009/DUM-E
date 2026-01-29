@@ -182,7 +182,7 @@ class Agenda:
             # Afficher les tâches futures
             if future_tasks:
                 print(f"\n{self.dum_e.name} : 📅 TÂCHES FUTURES :")
-                message += " *📅 TÂCHES FUTURES*\n\n"
+                message += "\n\n *📅 TÂCHES FUTURES* \n\n"
                 for i, rappel in enumerate(future_tasks, 1):
                     if rappel.get("type") == "exacte" or rappel.get("type") == "relative":
                         print(f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']}")

@@ -5,6 +5,22 @@ import datetime as dt
 import random
 
 
+def extract_name(ans):
+    patterns = [
+        "je m'appelle",
+        "je mappelle",
+        "mon nom est",
+        "je suis"
+    ]
+
+    for p in patterns:
+        if p in ans:
+            name = ans.split(p)[-1].strip()
+            return name.capitalize()
+
+    return None
+
+
 class HandleMain:
     def __init__(self, dum_e, game_instance, save, agenda):
         self.dum_e = dum_e
@@ -282,7 +298,7 @@ class HandleMain:
 • /status → Vérifier l'état du bot
 • /cancel → Annuel une action
 • /stop → Réinitialiser la conversation
-/list_agenda
+•/list_agenda
 """
         return help_text
 
@@ -293,19 +309,26 @@ class HandleMain:
         print(self.get_help_text())
         print("=" * 50 + "\n")
 
+
+
+
     def handle_memo(self, ans):
         ans_clean = clean_input(ans)
         intention = detect_intent(ans_clean)
 
-        if intention == "GET_NAME":
+
+
+        if intention == "SET_NAME":
             self.add_histo("memo", ans_clean)
-            parts_name = ans_clean.split()
+            # parts_name = ans_clean.split()
+            #
+            # if len(parts_name) < 3:
+            #     print("Je n'ai pas compris ton nom 😅")
+            #     return True
+            #
+            # name = " ".join(parts_name[2:])
 
-            if len(parts_name) < 3:
-                print("Je n'ai pas compris ton nom 😅")
-                return True
-
-            name = " ".join(parts_name[2:])
+            name = extract_name(ans)
 
             if name:
                 self.dum_e.username = name
