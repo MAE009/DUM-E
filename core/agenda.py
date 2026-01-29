@@ -117,8 +117,8 @@ class Agenda:
 
 
     # sera appelle au demarrage
-    def reminder_priority(self):
-        All_rappels = []
+    async def reminder_priority(self):
+        message = ""
         # Nettoyer d'abord
         self.dum_e.memo.clean_old_agenda()
 
@@ -158,6 +158,7 @@ class Agenda:
             # Afficher les tâches urgentes
             if urgent_tasks:
                 print(f"\n{self.dum_e.name} : 📌 RAPPELS URGENTS (7 prochains jours) :")
+                message = "📌 *RAPPELS URGENTS* (7 prochains jours)\n\n"
                 for i, rappel in enumerate(urgent_tasks, 1):
                     if rappel.get("type") == "exacte" or rappel.get("type") == "relative":
                         # Calculer combien de jours restent
@@ -172,23 +173,25 @@ class Agenda:
 
                         print(
                             f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']} ({days_str})")
-                        All_rappels.append(f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']} ({days_str})")
+                        message += f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']} ({days_str})\n"
+
                     elif rappel.get("type") == "semaine":
                         print(f"  {i}. {rappel['rappel']} - {rappel['jour_nom'].capitalize()}")
-                        All_rappels.append(f"  {i}. {rappel['rappel']} - {rappel['jour_nom'].capitalize()}")
+                        message += f"  {i}. {rappel['rappel']} - {rappel['jour_nom'].capitalize()}\n"
 
             # Afficher les tâches futures
             if future_tasks:
                 print(f"\n{self.dum_e.name} : 📅 TÂCHES FUTURES :")
+                message += " *📅 TÂCHES FUTURES*\n\n"
                 for i, rappel in enumerate(future_tasks, 1):
                     if rappel.get("type") == "exacte" or rappel.get("type") == "relative":
                         print(f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']}")
-                        All_rappels.append(f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']}")
+                        message += f"  {i}. {rappel['rappel']} - le {rappel['jour']}/{rappel['mois']}/{rappel['annee']}\n"
 
             if urgent_tasks or future_tasks:
                 # Convertir la liste en chaîne
-                if All_rappels:
-                    return "\n".join(All_rappels)
+                if message != "":
+                    return message
                 return "📅 Agenda vide"
             else:
                 return f"{self.dum_e.name} : Aucun rappel dans l'agenda.\n"

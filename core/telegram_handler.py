@@ -59,11 +59,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def agenda_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    dum_e_instance = get_dum_e_instance(chat_id)
-
-    agenda_list = dum_e_instance.agenda()  # Pas besoin de await
-    await update.message.reply_text(agenda_list, parse_mode='Markdown')
+    try:
+        chat_id = update.effective_chat.id
+        dum_e_instance = get_dum_e_instance(chat_id)
+        agenda_list = await dum_e_instance.agenda()
+        await update.message.reply_text(agenda_list, parse_mode='Markdown')
+    except Exception as e:
+        await update.message.reply_text(f"Erreur : {str(e)}")
 
 
 
