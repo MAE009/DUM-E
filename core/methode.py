@@ -82,7 +82,7 @@ def detect_intent(ans):
         if close_match(word, ["historique", "history", "his"]):
             return "HISTORIQUE"
 
-        if close_match(word, ["jeu", "jouer", "game", "play"]):
+        if close_match(word, ["jouer", "game", "play"]):
             return "GAME_START"
 
 
