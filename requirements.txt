@@ -1,0 +1,5 @@
+# DUM-E n'a actuellement aucune dépendance externe
+# (json, pathlib, datetime, difflib, string, random sont inclus dans Python)
+#
+# Prêt à recevoir les futures dépendances, ex :
+# python-telegram-bot==21.*

@@ -1,0 +1,37 @@
+{
+    "user": {
+        "name": "à toi",
+        "language": "fr"
+    },
+    "preferences": {
+        "color": "",
+        "city": ""
+    },
+    "agenda": {
+        "taches": [
+            {
+                "rappel": "po",
+                "jour": 28,
+                "mois": 7,
+                "annee": 2026,
+                "type": "relative"
+            }
+        ]
+    },
+    "history": {
+        "commands": []
+    },
+    "games": {
+        "devine_nombre": {
+            "best_score": null,
+            "played": 0
+        },
+        "pile_face": {
+            "best_score": 2,
+            "played": 5
+        }
+    },
+    "system": {
+        "version": "0.3"
+    }
+}
