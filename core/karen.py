@@ -40,6 +40,7 @@ class Karen:
         self.workers = {}   # {"INTENT": worker}
         self.pending = None  # état en cours d'une collecte multi-tours (ou None)
 
+
     def register(self, intent_name, worker):
         """Associe un intent à un worker qui sait le traiter."""
         self.workers[intent_name] = worker
@@ -53,35 +54,91 @@ class Karen:
     def detect_intent(self, texte):
         from shared.config import salutations, exits, helps, time_days
 
-        ans_clean = clean_input(texte)
+        ans_clean :str = clean_input(texte)
+        # print("Debug:", ans_clean.split())
+        intents = []
+
 
         if close_match(ans_clean, salutations) or any(k in ans_clean for k in salutations):
-            if ans_clean.startswith(salutations):
-                return "GREETING", {}, 0.9
+            # if ans_clean.startswith(salutations):
+                # return "GREETING", {}, 0.9
+            intents.append({
+                "name": "GREETING",
+                "priority": 10,
+                "confidence": 0.9,
+                "slots": {}
+            })
+
 
         if close_match(ans_clean, exits) or any(k in ans_clean for k in exits):
-            if ans_clean.startswith(exits):
-                return "EXIT", {}, 0.9
+            # if ans_clean.startswith(exits):
+                # return "EXIT", {}, 0.9
+            intents.append({
+                "name": "EXIT",
+                "priority": 5,
+                "confidence": 0.9,
+                "slots": {}
+            })
+
 
         if close_match(ans_clean, helps) or any(k in ans_clean for k in helps):
-            if ans_clean.startswith(helps):
-                return "HELP", {}, 0.9
+            # if ans_clean.startswith(helps):
+                # return "HELP", {}, 0.9
+            intents.append({
+                "name": "HELP",
+                "priority": 20,
+                "confidence": 0.9,
+                "slots": {}
+            })
 
         if any(k in ans_clean for k in time_days):
             if "heure" in ans_clean:
-                return "TIME", {"sous_intent": "heure"}, 0.9
+                # return "TIME", {"sous_intent": "heure"}, 0.9
+                intents.append({
+                    "name": "TIME",
+                    "priority": 30,
+                    "confidence": 0.9,
+                    "slots": {"sous_intent": "heure"}
+                })
+
             if "date" in ans_clean:
-                return "TIME", {"sous_intent": "date"}, 0.9
-            return "TIME", {"sous_intent": "jour"}, 0.9
+                # return "TIME", {"sous_intent": "date"}, 0.9
+                intents.append({
+                    "name": "TIME",
+                    "priority": 30,
+                    "confidence": 0.9,
+                    "slots": {"sous_intent": "date"}
+                })
+
+
+            # return "TIME", {"sous_intent": "jour"}, 0.9
+            intents.append({
+                "name": "TIME",
+                "priority": 30,
+                "confidence": 0.9,
+                "slots": {"sous_intent": "jour"}
+            })
 
         # ⚠️ Testé AVANT la détection de prénom, car "rappel moi" contient
         # la sous-chaîne "appel" et serait sinon pris pour "je m'appelle".
         if "rappel moi" in ans_clean or "rappel-moi" in ans_clean:
-            return "SET_REMINDER", {}, 0.85
+            # return "SET_REMINDER", {}, 0.85
+            intents.append({
+                "name": "SET_REMINDER",
+                "priority": 100,
+                "confidence": 0.85,
+                "slots": {}
+            })
 
         # "oublie" AVANT "mon nom", car "oublie mon nom" contient "mon nom".
         if "oublie" in ans_clean:
-            return "FORGET_NAME", {}, 0.8
+            # return "FORGET_NAME", {}, 0.8
+            intents.append({
+                "name": "FORGET_NAME",
+                "priority": 90,
+                "confidence": 0.8,
+                "slots": {}
+            })
 
         # Détection tolérante du prénom : on compare chaque mot (par
         # similarité, pas par sous-chaîne) au radical "appelle". Ça
@@ -102,21 +159,61 @@ class Karen:
 
         if idx_appel is not None:
             nom = " ".join(mots[idx_appel + 1:]).strip()
-            return "SET_NAME", {"nom": nom}, 0.85
+            # return "SET_NAME", {"nom": nom}, 0.85
+            intents.append({
+                "name": "SET_NAME",
+                "priority": 80,
+                "confidence": 0.85,
+                "slots": {"nom": nom}
+            })
 
         if "mon nom" in ans_clean:
-            return "GET_NAME", {}, 0.8
+            # return "GET_NAME", {}, 0.8
+            intents.append({
+                "name": "GET_NAME",
+                "priority": 70,
+                "confidence": 0.8,
+                "slots": {}
+            })
 
         if ans_clean in ("historique", "history", "his"):
-            return "HISTORY", {}, 0.9
+            # return "HISTORY", {}, 0.9
+            intents.append({
+                "name": "HISTORY",
+                "priority": 50,
+                "confidence": 0.9,
+                "slots": {}
+            })
 
         if ans_clean in ("status", "debug", "version"):
-            return "DEBUG", {"sous_commande": ans_clean}, 0.9
+            # return "DEBUG", {"sous_commande": ans_clean}, 0.9
+            intents.append({
+                "name": "DEBUG",
+                "priority": 60,
+                "confidence": 0.9,
+                "slots": {"sous_commande": ans_clean}
+            })
 
         if "jeu" in ans_clean or close_match(ans_clean, ["jouer"]):
-            return "GAME_START", {}, 0.8
+            # return "GAME_START", {}, 0.8
+            intents.append({
+                "name": "GAME_START",
+                "priority": 40,
+                "confidence": 0.8,
+                "slots": {}
+            })
 
-        return "UNKNOWN", {}, 0.0
+        # return "UNKNOWN", {}, 0.0
+        return intents
+
+    def resolve_intents(self, intents):
+        greetings = [i for i in intents if i["name"] == "GREETING"]
+        others = [i for i in intents if i["name"] != "GREETING"]
+
+        others = sorted(others, key=lambda i: i["priority"], reverse=True)
+
+        return greetings + others
+
     # ---------------------------------------------------------
     # POINT D'ENTREE PRINCIPAL - appelé par DUM-E à chaque message.
     # context : dict transmis par DUM-E, ex {"game_state": True}
@@ -134,21 +231,48 @@ class Karen:
         if self.pending is not None:
             return self._continue_pending(texte)
 
-        # 3. Détection d'intention classique
-        intent, slots, confidence = self.detect_intent(texte)
+        # 3. Détection de TOUTES les intentions présentes dans le message,
+        #    triées par priorité (utilise la liste triée, pas la brute).
+        raw_intents = self.detect_intent(texte)
+        ordered_intents = self.resolve_intents(raw_intents)
 
-        if intent == "UNKNOWN" or confidence < 0.5:
+        if not ordered_intents:
             return Response(text=None)
 
-        # 4. Si l'intent a besoin d'infos supplémentaires -> démarrer la collecte
-        if intent in REQUIRED_SLOTS:
-            return self._start_slot_collection(intent, slots)
+        # 4. Si UNE des intentions détectées a besoin d'une collecte multi-
+        #    tours (ex: SET_REMINDER), elle passe devant tout le reste,
+        #    même si une salutation est aussi présente dans le même message.
+        #    Sinon "salut, rappelle-moi la réunion demain" perdrait le rappel.
+        slot_intent = next((i for i in ordered_intents if i["name"] in REQUIRED_SLOTS), None)
+        if slot_intent:
+            return self._start_slot_collection(slot_intent["name"], slot_intent["slots"])
 
-        worker = self.workers.get(intent)
-        if worker is None:
+        # 5. Sinon, on traite toutes les intentions détectées (au-dessus
+        #    du seuil de confiance) et on combine leurs réponses.
+        responses = []
+        for intent_data in ordered_intents:
+            if intent_data["confidence"] < 0.5:
+                continue
+            worker = self.workers.get(intent_data["name"])
+            if worker is None:
+                continue
+            resp = worker.handle(intent_data["name"], intent_data["slots"], context)
+            if resp and resp.text:
+                responses.append(resp)
+
+        if not responses:
             return Response(text="Je comprends ce que tu veux, mais je n'ai pas encore le module pour ça.")
 
-        return worker.handle(intent, slots, context)
+        # On fusionne les textes ET les data (ex: plusieurs workers qui
+        # touchent chacun un bout de context, comme game_state + username)
+        texte_final = "\n\t".join(r.text for r in responses)
+        data_finale = {}
+        for r in responses:
+            data_finale.update(r.data)
+
+        return Response(text=texte_final, data=data_finale)
+
+
 
     def _start_slot_collection(self, intent, slots_deja_connus):
         self.pending = {

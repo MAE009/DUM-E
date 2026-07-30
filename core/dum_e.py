@@ -18,6 +18,7 @@ import random
 import datetime as dt
 
 from core.karen import Karen
+from core.personnalite import Personnalite
 from Memo.memo import Memo
 from shared.config import confir
 
@@ -35,6 +36,7 @@ class DUM_E:
         self.version = 0.4
         self.type = "Assistant intelligent basé sur des règles"
         self.language = "Python"
+        self.personnalite = Personnalite.SECRETAIRE  # valeur par défaut
 
         self.now = dt.datetime.now()
         self.time_demarrage = self.now.strftime('%H:%M:%S')
@@ -83,12 +85,44 @@ class DUM_E:
         self.karen.register("TIME", TimeWorker())
 
     def salutation(self):
-        ans_various = [
-            f"Salut ! Je suis {self.name} v{self.version}. Prêt à t'aider 😄",
-            f"Hey 👋 {self.name} à ton service.",
-            f"Yo ! C'est {self.name}. Dis-moi ce que tu veux faire.",
-        ]
-        return random.choice(ans_various)
+        personnalites = {
+            "secretaire": [
+                f"Bonjour Emmanuel 😊 Je suis {self.name} v{self.version}. Que puis-je organiser pour toi aujourd'hui ?",
+                f"Bonjour 👋 Ravi de te retrouver. {self.name} est prêt à t'aider dans tes tâches.",
+                f"Bonjour Emmanuel, je suis disponible pour t'aider à gérer tes rappels, projets et idées.",
+            ],
+
+            "majordome": [
+                f"Bonsoir Monsieur Emmanuel. {self.name} v{self.version} est à votre disposition.",
+                f"Bienvenue Monsieur. Comment puis-je vous assister aujourd'hui ?",
+                f"Tout est prêt, Monsieur Emmanuel. Dites-moi simplement ce dont vous avez besoin.",
+            ],
+
+            "compagnon": [
+                f"Hey Emmanuel 😄 Content de te revoir ! {self.name} est prêt pour une nouvelle session.",
+                f"Salut 👋 Qu'est-ce qu'on construit aujourd'hui ?",
+                f"Yo Emmanuel ! On continue les projets ou on attaque quelque chose de nouveau ?",
+            ],
+        }
+
+        phrases = personnalites.get(
+            self.personnalite,
+            personnalites["compagnon"]
+        )
+
+        return random.choice(phrases)
+
+
+    def set_personnalite(self, mode):
+        modes_valides = ["secretaire", "majordome", "compagnon"]
+
+        if mode in modes_valides:
+            self.personnalite = mode
+            return f"Mode {mode} activé."
+
+        return "Personnalité inconnue."
+
+
 
     def add_histo(self, handle, commande):
         self.histo.append({
@@ -99,12 +133,14 @@ class DUM_E:
             self.histo.pop(0)
 
     def dialog(self):
-        if self._awaiting_exit_confirm:
-            print(f"{self.name} : Es-tu sûr de vouloir quitter ?")
-        elif not self.game_state:
-            print(f"{self.name} : Comment puis-je t'aider ?")
-        else:
+        # if self._awaiting_exit_confirm:
+        #     print(f"{self.name} : Es-tu sûr de vouloir quitter ?")
+
+        if self.game_state:
             print(f"{self.name} : alors ?")
+
+        elif self.karen.pending is None and not self._awaiting_exit_confirm:
+            print(f"{self.name} : Comment puis-je t'aider ?")
 
         ans = input("Moi : ").strip()
         self.handle_event(ans)
