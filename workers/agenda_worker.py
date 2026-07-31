@@ -34,7 +34,7 @@ class AgendaWorker(Worker):
 
             ok = self.agenda.update_reminder(texte, date_input)
             if ok:
-                return Response(text=f"C'est noté : « {texte} »")
+                return Response(text=f"C'est noté : « {texte} »", params={"texte": texte})
 
             # On ne redemande PAS le texte du rappel (déjà validé),
             # seulement la date -> signal retry_slot pour KAREN.

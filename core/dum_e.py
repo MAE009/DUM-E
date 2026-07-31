@@ -19,6 +19,7 @@ import datetime as dt
 
 from core.karen import Karen
 from core.personnalite import Personnalite
+from workers.personality_worker import PersonalityWorker
 from Memo.memo import Memo
 from shared.config import confir
 
@@ -56,6 +57,7 @@ class DUM_E:
         # ---- KAREN : le cerveau ----
         self.karen = Karen()
         self._register_workers()
+        self.karen.register("SET_PERSONALITY", PersonalityWorker())
 
         self.run()
 
@@ -85,32 +87,9 @@ class DUM_E:
         self.karen.register("TIME", TimeWorker())
 
     def salutation(self):
-        personnalites = {
-            "secretaire": [
-                f"Bonjour Emmanuel 😊 Je suis {self.name} v{self.version}. Que puis-je organiser pour toi aujourd'hui ?",
-                f"Bonjour 👋 Ravi de te retrouver. {self.name} est prêt à t'aider dans tes tâches.",
-                f"Bonjour Emmanuel, je suis disponible pour t'aider à gérer tes rappels, projets et idées.",
-            ],
-
-            "majordome": [
-                f"Bonsoir Monsieur Emmanuel. {self.name} v{self.version} est à votre disposition.",
-                f"Bienvenue Monsieur. Comment puis-je vous assister aujourd'hui ?",
-                f"Tout est prêt, Monsieur Emmanuel. Dites-moi simplement ce dont vous avez besoin.",
-            ],
-
-            "compagnon": [
-                f"Hey Emmanuel 😄 Content de te revoir ! {self.name} est prêt pour une nouvelle session.",
-                f"Salut 👋 Qu'est-ce qu'on construit aujourd'hui ?",
-                f"Yo Emmanuel ! On continue les projets ou on attaque quelque chose de nouveau ?",
-            ],
-        }
-
-        phrases = personnalites.get(
-            self.personnalite,
-            personnalites["compagnon"]
-        )
-
-        return random.choice(phrases)
+        from core.personality_responses import get_response
+        texte = get_response(self.personnalite, "GREETING")
+        return texte or f"Bonjour, je suis {self.name}."
 
 
     def set_personnalite(self, mode):
@@ -156,7 +135,11 @@ class DUM_E:
             self._awaiting_exit_confirm = False
             return
 
-        context = {"game_state": self.game_state, "username": self.username}
+        context = {
+            "game_state": self.game_state,
+            "username": self.username,
+            "personnalite": self.personnalite,
+        }
         response = self.karen.process(ans, context)
 
         if response is None or response.text is None:
@@ -176,6 +159,10 @@ class DUM_E:
             self.username = response.data["username"]
         if response.data.get("awaiting_exit_confirm"):
             self._awaiting_exit_confirm = True
+
+        if "set_personnalite" in response.data:
+            from core.personnalite import Personnalite
+            self.personnalite = Personnalite(response.data["set_personnalite"])
 
         self.add_histo("intent", ans)
 

@@ -9,15 +9,17 @@ tard sans toucher à DUM-E.
 """
 
 class Response:
-    def __init__(self, text=None, data=None):
-        # text : ce qui doit être affiché à l'utilisateur.
-        #        None = "je n'ai rien compris", DUM-E affichera son message par défaut.
+    def __init__(self, text=None, data=None, params=None):
+        # text : ce qui doit être affiché à l'utilisateur (texte par défaut).
         self.text = text
 
-        # data : infos "techniques" pour DUM-E, PAS pour l'utilisateur.
-        #        ex: {"game_state": True} pour dire à DUM-E qu'on est entré dans un jeu
-        #        ex: {"username": "Armand"} pour mettre à jour le prénom connu
+        # data : infos "techniques" pour DUM-E (game_state, username...)
         self.data = data or {}
 
+        # params : faits BRUTS pour la personnalité (ex: {"valeur": "17:43"}).
+        # Séparés de "data" car ce ne sont pas des infos système, juste
+        # de quoi reformuler le texte selon la voix active.
+        self.params = params or {}
+
     def __repr__(self):
-        return f"Response(text={self.text!r}, data={self.data!r})"
+        return f"Response(text={self.text!r}, data={self.data!r}, params={self.params!r})"

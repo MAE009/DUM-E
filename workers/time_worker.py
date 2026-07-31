@@ -22,7 +22,13 @@ class TimeWorker(Worker):
         sous_intent = slots.get("sous_intent", "heure")
 
         if sous_intent == "heure":
-            return Response(text=f"Il est {now.strftime('%H:%M:%S')}")
-        if sous_intent == "date":
-            return Response(text=f"Aujourd'hui c'est le {now.strftime('%d/%m/%Y')}")
-        return Response(text=f"Aujourd'hui c'est {JOURS_FR[now.strftime('%A')]}")
+            valeur = now.strftime('%H:%M:%S')
+            texte_defaut = f"Il est {valeur}"
+        elif sous_intent == "date":
+            valeur = now.strftime('%d/%m/%Y')
+            texte_defaut = f"Aujourd'hui c'est le {valeur}"
+        else:
+            valeur = JOURS_FR[now.strftime('%A')]
+            texte_defaut = f"Aujourd'hui c'est {valeur}"
+
+        return Response(text=texte_defaut, params={"sous_intent": sous_intent, "valeur": valeur})

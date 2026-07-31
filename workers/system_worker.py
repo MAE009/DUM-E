@@ -17,18 +17,38 @@ class SystemWorker(Worker):
 
     def handle(self, intent, slots, context):
         if intent == "HELP":
-            return Response(text=self._help_text())
+            return Response(text=self._help_text(), params={})
 
         if intent == "EXIT":
             return Response(text="Es-tu sûr de vouloir quitter ?", data={"awaiting_exit_confirm": True})
 
         if intent == "DEBUG":
-            return Response(text=self._debug_text(slots.get("sous_commande", "status")))
+            sous_commande = slots.get("sous_commande", "status")
+            return Response(
+                text=self._debug_text(sous_commande),
+                params={
+                    "sous_commande": sous_commande,
+                    "name": self.info["name"],
+                    "version": self.info["version"],
+                    "username": self.info.get("username") or "inconnu",
+                    "nb_commandes": len(self.histo),
+                    "demarrage": self.info["time_demarrage"],
+                    "type": self.info["type"],
+                    "language": self.info["language"],
+                    "dernier": self.histo[-1] if self.histo else None,
+                }
+            )
 
         if intent == "HISTORY":
-            return Response(text=self._history_text())
+            return Response(
+                text=self._history_text(),
+                params={"nb_commandes": len(self.histo), "lignes": self._history_lignes()}
+            )
 
         return Response(text="Commande système inconnue.")
+
+    def _history_lignes(self):
+        return [f"{i}. [{h['heure']}] {h['type']} → {h['commande']}" for i, h in enumerate(self.histo, 1)]
 
     def _help_text(self):
         return (

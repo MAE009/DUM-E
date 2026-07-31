@@ -16,6 +16,7 @@ web, une appli vocale... sans rien changer dans ce fichier.
 """
 from shared.methode import clean_input, close_match
 from core.response import Response
+from core.personality_responses import get_response
 import difflib
 
 
@@ -57,6 +58,7 @@ class Karen:
         ans_clean :str = clean_input(texte)
         # print("Debug:", ans_clean.split())
         intents = []
+
 
 
         if close_match(ans_clean, salutations) or any(k in ans_clean for k in salutations):
@@ -204,6 +206,21 @@ class Karen:
             })
 
         # return "UNKNOWN", {}, 0.0
+
+        # Changement de personnalité : "deviens secretaire", "mode majordome"...
+        modes_personnalite = {"secretaire": "secretaire", "secrétaire": "secretaire",
+                              "majordome": "majordome", "compagnon": "compagnon"}
+        if any(mot in ans_clean for mot in ("deviens", "mode", "passe en")):
+            for mot_cle, mode in modes_personnalite.items():
+                if mot_cle in ans_clean:
+                    intents.append({
+                        "name": "SET_PERSONALITY",
+                        "priority": 95,
+                        "confidence": 0.9,
+                        "slots": {"mode": mode}
+                    })
+                    break
+
         return intents
 
     def resolve_intents(self, intents):
@@ -220,35 +237,35 @@ class Karen:
     # ---------------------------------------------------------
     def process(self, texte, context=None):
         context = context or {}
+        personnalite = context.get("personnalite")
 
-        # 1. Priorité au jeu en cours, s'il y en a un
         if context.get("game_state") and "GAME_INPUT" in self.workers:
             resp = self.workers["GAME_INPUT"].handle("GAME_INPUT", {"texte": texte}, context)
             if resp is not None:
                 return resp
 
-        # 2. Si on est en pleine collecte de slots (ex: rappel étape 2/2)
         if self.pending is not None:
-            return self._continue_pending(texte)
+            return self._continue_pending(texte, personnalite)
 
-        # 3. Détection de TOUTES les intentions présentes dans le message,
-        #    triées par priorité (utilise la liste triée, pas la brute).
         raw_intents = self.detect_intent(texte)
         ordered_intents = self.resolve_intents(raw_intents)
 
         if not ordered_intents:
             return Response(text=None)
 
-        # 4. Si UNE des intentions détectées a besoin d'une collecte multi-
-        #    tours (ex: SET_REMINDER), elle passe devant tout le reste,
-        #    même si une salutation est aussi présente dans le même message.
-        #    Sinon "salut, rappelle-moi la réunion demain" perdrait le rappel.
+        # Un intent multi-tours (ex: SET_REMINDER) passe devant tout le
+        # reste, MAIS on garde la salutation si elle était aussi présente
+        # dans le même message, pour ne pas la perdre silencieusement.
         slot_intent = next((i for i in ordered_intents if i["name"] in REQUIRED_SLOTS), None)
         if slot_intent:
-            return self._start_slot_collection(slot_intent["name"], slot_intent["slots"])
+            slot_response = self._start_slot_collection(slot_intent["name"], slot_intent["slots"])
+            greeting_present = any(i["name"] == "GREETING" for i in ordered_intents)
+            if greeting_present:
+                habillage = get_response(personnalite, "GREETING")
+                if habillage:
+                    slot_response.text = f"{habillage}\n{slot_response.text}"
+            return slot_response
 
-        # 5. Sinon, on traite toutes les intentions détectées (au-dessus
-        #    du seuil de confiance) et on combine leurs réponses.
         responses = []
         for intent_data in ordered_intents:
             if intent_data["confidence"] < 0.5:
@@ -258,21 +275,20 @@ class Karen:
                 continue
             resp = worker.handle(intent_data["name"], intent_data["slots"], context)
             if resp and resp.text:
+                habillage = get_response(personnalite, intent_data["name"], **resp.params)
+                if habillage:
+                    resp.text = habillage
                 responses.append(resp)
 
         if not responses:
             return Response(text="Je comprends ce que tu veux, mais je n'ai pas encore le module pour ça.")
 
-        # On fusionne les textes ET les data (ex: plusieurs workers qui
-        # touchent chacun un bout de context, comme game_state + username)
         texte_final = "\n\t".join(r.text for r in responses)
         data_finale = {}
         for r in responses:
             data_finale.update(r.data)
 
         return Response(text=texte_final, data=data_finale)
-
-
 
     def _start_slot_collection(self, intent, slots_deja_connus):
         self.pending = {
@@ -290,14 +306,13 @@ class Karen:
         texte = f"{reask_text}\n{question}" if reask_text else question
         return Response(text=texte, data={"awaiting_slot": nom_slot})
 
-    def _continue_pending(self, texte):
+    def _continue_pending(self, texte, personnalite=None):
         nom_slot, _question = self.pending["restants"].pop(0)
         self.pending["collected"][nom_slot] = texte.strip()
 
         if self.pending["restants"]:
             return self._ask_next_slot()
 
-        # Tous les slots sont collectés -> on délègue enfin au worker
         intent = self.pending["intent"]
         slots = self.pending["collected"]
         retry_count = self.pending["retry_count"]
@@ -309,16 +324,16 @@ class Karen:
 
         response = worker.handle(intent, slots, {})
 
-        # Le worker signale qu'un slot précis est invalide (ex: date
-        # mal comprise) -> on rouvre la collecte UNIQUEMENT pour ce slot.
         retry_slot = response.data.get("retry_slot")
         if retry_slot:
             if retry_count >= MAX_SLOT_RETRIES:
                 return Response(text="Bon, on laisse tomber ce rappel pour l'instant. Tu pourras réessayer plus tard.")
-
             self._reopen_slot(intent, slots, retry_slot, retry_count)
             return self._ask_next_slot(reask_text=response.text)
 
+        habillage = get_response(personnalite, intent, **response.params)
+        if habillage:
+            response.text = habillage
         return response
 
     def _reopen_slot(self, intent, collected_slots, retry_slot, previous_retry_count):

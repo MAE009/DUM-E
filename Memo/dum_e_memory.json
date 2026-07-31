@@ -15,6 +15,13 @@
                 "mois": 7,
                 "annee": 2026,
                 "type": "relative"
+            },
+            {
+                "rappel": "reunion",
+                "jour": 1,
+                "mois": 8,
+                "annee": 2026,
+                "type": "relative"
             }
         ]
     },
